@@ -1,36 +1,60 @@
+AGED_BRIE = "Aged Brie"
+SULFURAS = "Sulfuras, Hand of Ragnaros"
+BACKSTAGE_PASSES = "Backstage passes to a TAFKAL80ETC concert"
+
+
 class GildedRose(object):
     def __init__(self, items):
         self.items = items
 
+    def _is_aged_brie(self, item):
+        return item.name == AGED_BRIE
+
+    def _is_sulfuras(self, item):
+        return item.name == SULFURAS
+
+    def _is_backstage_passes(self, item):
+        return item.name == BACKSTAGE_PASSES
+
+    def _clamp_quality(self, item):
+        item.quality = max(0, min(50, item.quality))
+
     def update_quality(self):
         for item in self.items:
-            if item.name != "Aged Brie" and item.name != "Backstage passes to a TAFKAL80ETC concert":
-                if item.quality > 0:
-                    if item.name != "Sulfuras, Hand of Ragnaros":
-                        item.quality = item.quality - 1
+            if self._is_sulfuras(item):
+                continue
+            elif self._is_aged_brie(item):
+                self._update_aged_brie(item)
+            elif self._is_backstage_passes(item):
+                self._update_backstage_passes(item)
             else:
-                if item.quality < 50:
-                    item.quality = item.quality + 1
-                    if item.name == "Backstage passes to a TAFKAL80ETC concert":
-                        if item.sell_in < 11:
-                            if item.quality < 50:
-                                item.quality = item.quality + 1
-                        if item.sell_in < 6:
-                            if item.quality < 50:
-                                item.quality = item.quality + 1
-            if item.name != "Sulfuras, Hand of Ragnaros":
-                item.sell_in = item.sell_in - 1
-            if item.sell_in < 0:
-                if item.name != "Aged Brie":
-                    if item.name != "Backstage passes to a TAFKAL80ETC concert":
-                        if item.quality > 0:
-                            if item.name != "Sulfuras, Hand of Ragnaros":
-                                item.quality = item.quality - 1
-                    else:
-                        item.quality = item.quality - item.quality
-                else:
-                    if item.quality < 50:
-                        item.quality = item.quality + 1
+                self._update_normal_item(item)
+
+    def _update_normal_item(self, item):
+        item.sell_in -= 1
+        item.quality -= 1
+        if item.sell_in < 0:
+            item.quality -= 1
+        self._clamp_quality(item)
+
+    def _update_aged_brie(self, item):
+        item.sell_in -= 1
+        item.quality += 1
+        if item.sell_in < 0:
+            item.quality += 1
+        self._clamp_quality(item)
+
+    def _update_backstage_passes(self, item):
+        item.sell_in -= 1
+        if item.sell_in < 0:
+            item.quality = 0
+            return
+        item.quality += 1
+        if item.sell_in < 10:
+            item.quality += 1
+        if item.sell_in < 5:
+            item.quality += 1
+        self._clamp_quality(item)
 
 
 class Item:

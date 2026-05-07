@@ -46,5 +46,6 @@ Refactoring/
 ## 개발 규칙
 
 - 리팩토링 시 각 Phase 완료 후 반드시 `pytest tests/ -v` 로 회귀 검증
+- 리팩토링 시 각 Phase 완료 후 반드시 `pytest --cov` 로 커버리지 검증 추가
 - `Item` 클래스는 수정 금지 (레거시 제약)
 - 동작 변경 없이 구조·가독성만 개선
