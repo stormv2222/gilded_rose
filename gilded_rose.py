@@ -1,50 +1,55 @@
+from abc import ABC, abstractmethod
+
 AGED_BRIE = "Aged Brie"
 SULFURAS = "Sulfuras, Hand of Ragnaros"
 BACKSTAGE_PASSES = "Backstage passes to a TAFKAL80ETC concert"
 
 
-class GildedRose(object):
-    def __init__(self, items):
-        self.items = items
+class ItemUpdater(ABC):
+    _registry: dict = {}
 
-    def _is_aged_brie(self, item):
-        return item.name == AGED_BRIE
+    def __init_subclass__(cls, item_name=None, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if item_name:
+            ItemUpdater._registry[item_name] = cls()
 
-    def _is_sulfuras(self, item):
-        return item.name == SULFURAS
+    @classmethod
+    def for_item(cls, item):
+        return cls._registry.get(item.name, NormalItemUpdater())
 
-    def _is_backstage_passes(self, item):
-        return item.name == BACKSTAGE_PASSES
+    @abstractmethod
+    def update(self, item):
+        pass
 
     def _clamp_quality(self, item):
         item.quality = max(0, min(50, item.quality))
 
-    def update_quality(self):
-        for item in self.items:
-            if self._is_sulfuras(item):
-                continue
-            elif self._is_aged_brie(item):
-                self._update_aged_brie(item)
-            elif self._is_backstage_passes(item):
-                self._update_backstage_passes(item)
-            else:
-                self._update_normal_item(item)
 
-    def _update_normal_item(self, item):
+class NormalItemUpdater(ItemUpdater):
+    def update(self, item):
         item.sell_in -= 1
         item.quality -= 1
         if item.sell_in < 0:
             item.quality -= 1
         self._clamp_quality(item)
 
-    def _update_aged_brie(self, item):
+
+class AgedBrieUpdater(ItemUpdater, item_name=AGED_BRIE):
+    def update(self, item):
         item.sell_in -= 1
         item.quality += 1
         if item.sell_in < 0:
             item.quality += 1
         self._clamp_quality(item)
 
-    def _update_backstage_passes(self, item):
+
+class SulfurasUpdater(ItemUpdater, item_name=SULFURAS):
+    def update(self, item):
+        pass
+
+
+class BackstagePassesUpdater(ItemUpdater, item_name=BACKSTAGE_PASSES):
+    def update(self, item):
         item.sell_in -= 1
         if item.sell_in < 0:
             item.quality = 0
@@ -55,6 +60,15 @@ class GildedRose(object):
         if item.sell_in < 5:
             item.quality += 1
         self._clamp_quality(item)
+
+
+class GildedRose(object):
+    def __init__(self, items):
+        self.items = items
+
+    def update_quality(self):
+        for item in self.items:
+            ItemUpdater.for_item(item).update(item)
 
 
 class Item:
